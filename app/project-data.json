@@ -1,0 +1,52 @@
+{
+  "projects": [
+    {
+      "name": "Contributor Hub",
+      "owner": "Riley Chen",
+      "status": "Active",
+      "recentActivity": "Shipped the new getting-started flow",
+      "priority": "High",
+      "summary": "Making it easier for new contributors to find their first good issue."
+    },
+    {
+      "name": "Launchpad",
+      "owner": "Jordan Lee",
+      "status": "In review",
+      "recentActivity": "Shared the onboarding prototype for feedback",
+      "priority": "Medium",
+      "summary": "A smoother first week for every teammate joining the crew."
+    },
+    {
+      "name": "Docs Refresh",
+      "owner": "Sam Rivera",
+      "status": "Active",
+      "recentActivity": "Updated setup guides for the latest release",
+      "priority": "Low",
+      "summary": "Keeping the team's how-to guides clear, current, and easy to scan."
+    },
+    {
+      "name": "Accessibility Sweep",
+      "owner": "Alex Morgan",
+      "status": "Planning",
+      "recentActivity": "Collected keyboard navigation feedback",
+      "priority": "High",
+      "summary": "Spotting small improvements that make the product work for more people."
+    },
+    {
+      "name": "CI Reliability",
+      "owner": "Taylor Kim",
+      "status": "Active",
+      "recentActivity": "Investigating intermittent test failures",
+      "priority": "Medium",
+      "summary": "Helping every change land with a little more confidence."
+    },
+    {
+      "name": "Community Notes",
+      "owner": "Casey Patel",
+      "status": "In review",
+      "recentActivity": "Gathered highlights from this month's contributors",
+      "priority": "Low",
+      "summary": "Turning community feedback into a practical next-step list."
+    }
+  ]
+}

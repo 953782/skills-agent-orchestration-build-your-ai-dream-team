@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f6f2">
+    <meta name="description" content="A clear, contributor-friendly snapshot of Mona's team projects.">
+    <title>Project Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module">
+      const projectList = document.querySelector("#project-list");
+      const projectSearch = document.querySelector("#project-search");
+      const statusFilter = document.querySelector("#status-filter");
+      const loadError = document.querySelector("#load-error");
+      let projects = [];
+
+      function makeElement(tagName, className, text) {
+        const element = document.createElement(tagName);
+        if (className) element.className = className;
+        if (text !== undefined) element.textContent = text;
+        return element;
+      }
+
+      function slugify(value) {
+        return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      }
+
+      function makeProjectCard(project) {
+        const card = document.querySelector("#project-card-template").content.firstElementChild.cloneNode(true);
+        for (const field of ["name", "owner", "status", "recentActivity", "priority", "summary"]) {
+          card.querySelector(`[data-field="${field}"]`).textContent = project[field];
+        }
+        card.querySelector('[data-field="initials"]').textContent = project.owner.trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 2);
+        card.querySelector('[data-field="status"]').classList.add(`status-${slugify(project.status)}`);
+        card.querySelector(".priority-badge").classList.add(`priority-${slugify(project.priority)}`);
+        return card;
+      }
+
+      function renderProjects() {
+        const query = projectSearch.value.trim().toLowerCase();
+        const selectedStatus = statusFilter.value;
+        const visibleProjects = projects.filter((project) => {
+          const matchesStatus = selectedStatus === "all" || project.status === selectedStatus;
+          const searchable = [project.name, project.owner, project.status, project.priority, project.summary, project.recentActivity]
+            .join(" ")
+            .toLowerCase();
+          return matchesStatus && searchable.includes(query);
+        });
+
+        projectList.replaceChildren();
+        document.querySelector("#visible-count").textContent = visibleProjects.length;
+        if (visibleProjects.length === 0) {
+          projectList.append(makeElement("p", "empty-state", "No projects match those filters. Try another search."));
+        } else {
+          const fragment = document.createDocumentFragment();
+          visibleProjects.forEach((project) => fragment.append(makeProjectCard(project)));
+          projectList.append(fragment);
+        }
+      }
+
+      function populateSummary() {
+        const activeCount = projects.filter((project) => project.status.toLowerCase() === "active").length;
+        const priorityCount = projects.filter((project) => ["high", "urgent"].includes(project.priority.toLowerCase())).length;
+        document.querySelector("#total-count").textContent = projects.length;
+        document.querySelector("#active-count").textContent = activeCount;
+        document.querySelector("#attention-count").textContent = priorityCount;
+
+        const statuses = [...new Set(projects.map((project) => project.status))].sort();
+        statuses.forEach((status) => statusFilter.add(new Option(status, status)));
+      }
+
+      async function loadProjects() {
+        try {
+          const response = await fetch(document.querySelector("#main-content").dataset.projectData);
+          if (!response.ok) throw new Error(`Project data request failed with status ${response.status}`);
+
+          const data = await response.json();
+          if (!Array.isArray(data.projects)) throw new Error("Project data must contain a projects array");
+          const requiredFields = ["name", "owner", "status", "recentActivity", "priority", "summary"];
+          if (data.projects.some((project) => requiredFields.some((field) => typeof project[field] !== "string"))) {
+            throw new Error("A project is missing one or more required text fields");
+          }
+
+          projects = data.projects;
+          populateSummary();
+          renderProjects();
+        } catch (error) {
+          console.error("Unable to load Project Pulse data:", error);
+          loadError.hidden = false;
+          projectList.replaceChildren();
+        } finally {
+          projectList.setAttribute("aria-busy", "false");
+        }
+      }
+
+      projectSearch.addEventListener("input", renderProjects);
+      statusFilter.addEventListener("change", renderProjects);
+      loadProjects();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to dashboard</a>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Project Pulse home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>mona<span class="brand-divider">/</span>pulse</span>
+      </a>
+      <div class="header-note">
+        <span class="live-indicator" aria-hidden="true"></span>
+        <span>TEAM OVERVIEW</span>
+      </div>
+    </header>
+
+    <main id="main-content" class="dashboard" data-project-data="project-data.json">
+      <section class="welcome" aria-labelledby="page-title">
+        <div class="welcome-copy">
+          <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> MONA'S TEAM · PROJECTS</p>
+          <h1 id="page-title">Project Pulse<span class="title-period">.</span></h1>
+          <p class="welcome-description">A little clarity on what’s moving, who’s on it, and where a hand could help.</p>
+        </div>
+        <div class="updated-chip">
+          <span class="updated-icon" aria-hidden="true">↻</span>
+          <span>Team snapshot <strong>· just now</strong></span>
+        </div>
+      </section>
+
+      <section class="overview" aria-label="Project overview">
+        <article class="overview-card overview-card-total">
+          <div class="overview-label"><span class="overview-icon icon-grid" aria-hidden="true">▦</span> ALL PROJECTS</div>
+          <div class="overview-value" id="total-count">—</div>
+          <p class="overview-caption">Across the team</p>
+        </article>
+        <article class="overview-card">
+          <div class="overview-label"><span class="overview-icon icon-active" aria-hidden="true">↗</span> IN MOTION</div>
+          <div class="overview-value" id="active-count">—</div>
+          <p class="overview-caption">Active right now</p>
+        </article>
+        <article class="overview-card">
+          <div class="overview-label"><span class="overview-icon icon-focus" aria-hidden="true">◎</span> NEEDS A LOOK</div>
+          <div class="overview-value" id="attention-count">—</div>
+          <p class="overview-caption">High priority</p>
+        </article>
+        <aside class="overview-note">
+          <span class="note-spark" aria-hidden="true">✳</span>
+          <p><strong>Good work is a team sport.</strong><br>Pick up a thread and keep the momentum going.</p>
+        </aside>
+      </section>
+
+      <section class="projects-section" aria-labelledby="projects-heading">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">THE LATEST</p>
+            <h2 id="projects-heading">Team projects <span class="heading-count" id="visible-count"></span></h2>
+          </div>
+          <div class="project-controls">
+            <label class="search-control">
+              <span class="visually-hidden">Search projects</span>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.8" cy="8.8" r="5.8"></circle><path d="m13.2 13.2 4 4"></path></svg>
+              <input id="project-search" type="search" placeholder="Find a project…" autocomplete="off">
+            </label>
+            <label class="filter-control">
+              <span class="visually-hidden">Filter projects by status</span>
+              <select id="status-filter">
+                <option value="all">All status</option>
+              </select>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5"></path></svg>
+            </label>
+          </div>
+        </div>
+
+        <div id="load-error" class="load-error" role="alert" hidden>
+          <strong>Projects couldn’t be loaded.</strong>
+          <span>Refresh the page to try again.</span>
+        </div>
+        <div id="project-list" class="project-list" aria-live="polite" aria-busy="true">
+          <p class="loading-message">Gathering the latest from the team…</p>
+        </div>
+        <template id="project-card-template">
+          <article class="project-card">
+            <div class="card-topline">
+              <span class="status-badge" data-field="status"></span>
+              <span class="priority-badge"><span class="priority-dot"></span><span data-field="priority"></span></span>
+            </div>
+            <h3 class="project-title" data-field="name"></h3>
+            <p class="project-owner"><span class="owner-avatar" aria-hidden="true" data-field="initials"></span><span data-field="owner"></span></p>
+            <p class="project-summary" data-field="summary"></p>
+            <div class="project-activity"><span class="activity-icon" aria-hidden="true">↗</span><p data-field="recentActivity"></p></div>
+          </article>
+        </template>
+      </section>
+
+      <footer class="dashboard-footer">
+        <span class="footer-mark" aria-hidden="true">✳</span>
+        <p>Small steps, shared progress.</p>
+        <span class="footer-rule" aria-hidden="true"></span>
+        <p class="footer-credit">MADE FOR THE PEOPLE WHO MAKE IT HAPPEN</p>
+      </footer>
+    </main>
+  </body>
+</html>
